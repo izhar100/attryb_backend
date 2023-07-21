@@ -19,6 +19,7 @@ inventoryRouter.post("/add",auth,(req,res)=>{
 
 inventoryRouter.get("/",async(req,res)=>{
     const { order, filter} = req.query;
+    console.log("order:",order,"filter:",filter)
     try {
         if(filter=="price"){
             let inventory;
@@ -28,11 +29,7 @@ inventoryRouter.get("/",async(req,res)=>{
             }else{
                 inventory=await inventoryModel.find({}).populate("oemId").sort({price:-1})
             }
-            if(inventory.length>0){
-                res.status(200).json({inventory:inventory})
-            }else{
-                res.status(400).json({msg:"No inventory found"})
-            }
+            res.status(200).json({inventory:inventory})
         }else if(filter=="mileage"){
             let inventory = await inventoryModel.find({}).populate("oemId").lean();
             if(order=="asc"){
@@ -40,31 +37,21 @@ inventoryRouter.get("/",async(req,res)=>{
             }else{
                 inventory=inventory.sort((a,b)=>b.oemId.mileage-a.oemId.mileage)
             }
-            if(inventory.length>0){
-                res.status(200).json({inventory:inventory})
-            }else{
-                res.status(400).json({msg:"No inventory found"})
-            }
+            res.status(200).json({inventory:inventory})
 
-        }else if(filter=="colors"){
+        }else if(filter=="colors" && order){
             let inventory = await inventoryModel.find({}).populate({
                 path: "oemId",
-                match: { colors: { $regex: order, $options: "i" } },
             });
-            if(inventory.length>0){
-                res.status(200).json({inventory:inventory})
-            }else{
-                res.status(400).json({msg:"No inventory found"})
-            }
+            inventory=inventory.filter((el)=>{
+                return el.oemId.colors.includes(order)
+            })
+            res.status(200).json({inventory:inventory})
         }else{
             let inventory = await inventoryModel.find({}).populate({
                 path: "oemId",
             });
-            if(inventory.length>0){
-                res.status(200).json({inventory:inventory})
-            }else{
-                res.status(400).json({msg:"No inventory found"})
-            }
+            res.status(200).json({inventory:inventory})
         }
         
     } catch (error) {
